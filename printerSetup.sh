@@ -14,12 +14,19 @@ fail()
     exit 1
 }
 
-LPADMIN=$(which lpadmin)
+echo "Some components of this script will require sudo permissions."
+echo "Please enter your sudo password so we can interact with CUPS: "
+sudo true || fail
+echo
+
+# lpadmin is restricted to root on most distros
+LPADMIN=$(sudo which lpadmin)
 RAR=$(which unrar)
 WGET=$(which wget)
 DIALOG=$(which dialog)
-CUPSENABLE=$(which cupsenable)
-CUPSACCEPT=$(which cupsaccept)
+# cupsenable and cupsaccept are restricted to root on most distros
+CUPSENABLE=$(sudo which cupsenable)
+CUPSACCEPT=$(sudo which cupsaccept)
 UNZIP=$(which unzip)
 
 if [ -z $LPADMIN ]; then
@@ -42,18 +49,16 @@ if [ -z $WGET ]; then
     exit 1
 fi
 
-while true; do
-    GT_USER=$($DIALOG --inputbox "GT username:" 8 40 2>&1 >/dev/tty)
-    STATUS=$?
-    clear
-    if [ $STATUS -ne 0 ]; then
-        echo "Canceled"
-        exit 1
-    fi
-    if [ -n "$GT_USER" ]; then
-        break;
-    fi
-done
+GT_USER=$($DIALOG --inputbox "GT username:" 8 40 2>&1 >/dev/tty)
+STATUS=$?
+clear
+if [ $STATUS -ne 0 ]; then
+  echo "Canceled"
+  exit 1
+fi
+if [ -z $GT_USER ]; then
+  exit 1
+fi
 
 cmd=($DIALOG --separate-output --checklist "Select printers to install:" 22 76 16)
 options=(1 "Black Standard" on
@@ -75,11 +80,6 @@ clear
 
 mkdir -p /tmp/printer_install
 cd /tmp/printer_install
-
-echo "Please enter your root password if requested so we can interact with CUPS."
-sudo true || fail
-echo
-
 
 echo "==========GT Printer Installation Script Log==========" >> /tmp/printer_install/log
 echo "Selections: $INSTALL" >> /tmp/printer_install/log
